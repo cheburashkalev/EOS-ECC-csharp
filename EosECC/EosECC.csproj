@@ -1,17 +1,19 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-
-	<!-- Вот это самое главное -->
-	<PublishSingleFile>true</PublishSingleFile>
-	<!-- Это чтобы тащить за собой рантайм До .NET 6 будут рядом лежать нативные библиотеки jit-а и сборщика мусора-->
-	<SelfContained>true</SelfContained>
-	<!-- Эти две строки, чтобы уменьшить размер бинарника -->
-	<PublishTrimmed>true</PublishTrimmed>
-	<TrimMode>link</TrimMode>
+    <Product>Eos Ecc .NET</Product>
+    <FileVersion>1.0.$([System.DateTime]::UtcNow.Date.Subtract($([System.DateTime]::Parse("2000-01-01"))).TotalDays).$([System.Math]::Floor($([MSBuild]::Divide($([System.DateTime]::UtcNow.TimeOfDay.TotalSeconds), 1.32))))</FileVersion>
+    <Version>1.0.$([System.DateTime]::UtcNow.Date.Subtract($([System.DateTime]::Parse("2000-01-01"))).TotalDays)</Version>
+	  <!-- Вот это самое главное -->
+	  <PublishSingleFile>true</PublishSingleFile>
+	  <!-- Это чтобы тащить за собой рантайм До .NET 6 будут рядом лежать нативные библиотеки jit-а и сборщика мусора-->
+	  <SelfContained>true</SelfContained>
+	  <!-- Эти две строки, чтобы уменьшить размер бинарника -->
+	  <PublishTrimmed>true</PublishTrimmed>
+	  <TrimMode>link</TrimMode>
   </PropertyGroup>
 
   <ItemGroup>
