@@ -5,7 +5,7 @@ The author does not guarantee the further development of the library, but as nec
 
 # Example
 
-```
+```csharp
 using eos_ecc;
 string eosSign = ApiCommon.SignData("hi its me", "5JPdD1QWzrWRQqHcSHLJv9XWtyEah9SncCmN1nj1DxVxjCeuxyi");
 bool resVerifySign = ApiCommon.VerifySignature(b.ToString(), "hi its me", "EOS6AzHKdnoELKmqHrQmbxwDvDGQ8ZKtQiuBNcZinZ5b3xJ5oX1U5");
