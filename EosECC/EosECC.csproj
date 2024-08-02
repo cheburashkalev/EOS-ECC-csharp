@@ -20,8 +20,4 @@
     <PackageReference Include="Cryptography.ECDSA.Secp256k1" Version="1.1.3" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\BouncyCastle\BouncyCastle.csproj" />
-  </ItemGroup>
-
 </Project>
