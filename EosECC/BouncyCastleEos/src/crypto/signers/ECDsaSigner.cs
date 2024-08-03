@@ -80,8 +80,14 @@ namespace Org.BouncyCastle.Crypto.Signers
          *
          * @param message the message that will be verified later.
          */
-        public virtual BigInteger[] GenerateSignature(byte[] message)
+        public virtual BigInteger[] GenerateSignature(byte[] message, int nonce)
         {
+            var message = _message;
+            if (nonce > 0)
+            {
+                byte[] buffer = [.. message, .. new byte[nonce]];
+                message = SHA256.Create().ComputeHash(buffer);
+            }
             ECDomainParameters ec = key.Parameters;
             BigInteger n = ec.N;
             BigInteger e = CalculateE(n, message);

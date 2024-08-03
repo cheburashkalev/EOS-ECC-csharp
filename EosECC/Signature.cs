@@ -10,6 +10,7 @@ using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Signers;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Math.EC;
+using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Numerics;
@@ -161,23 +162,35 @@ public class Signature
         
         ECDomainParameters domainParams = new ECDomainParameters(curveParams.Curve, curveParams.G, curveParams.N, curveParams.H);
         eCDsaSigner.Init(true, new ECPrivateKeyParameters(new Org.BouncyCastle.Math.BigInteger(privateKey.D), domainParams));
-        BigInteger[] result = eCDsaSigner.GenerateSignature(dataSha256);
-        var _r = result[0].ToByteArray();
-        var _s = result[1].ToByteArray();
-
-        var der = ToDER(_r, _s);
-        var lenR = der[3];
-        var lenS = der[5 + lenR];
+        int nonce = 0;
         int i = 0;
-        var e = new BigInteger(1,dataSha256);
-        //System.Security.Cryptography.ECCurve.CreateFromFriendlyName("secp256k1")
-        System.Numerics.BigInteger r = System.Numerics.BigInteger.Parse(result[0].ToString());
-        System.Numerics.BigInteger s = System.Numerics.BigInteger.Parse(result[1].ToString());
-        if (lenR == 32 && lenS == 32)
+        System.Numerics.BigInteger r;
+        System.Numerics.BigInteger s;
+        while (true)
         {
-            i = calcPubKeyRecoveryParam(curveParams, e, new Signature(r, s), privateKey.ToPublic().ECPoint_D);
-            i += 4;
-            i += 27;
+            BigInteger[] result = eCDsaSigner.GenerateSignature(dataSha256,nonce);
+            nonce++;
+            var _r = result[0].ToByteArray();
+            var _s = result[1].ToByteArray();
+
+            var der = ToDER(_r, _s);
+            var lenR = der[3];
+            var lenS = der[5 + lenR];
+            var e = new BigInteger(1, dataSha256);
+            //System.Security.Cryptography.ECCurve.CreateFromFriendlyName("secp256k1")
+            r = System.Numerics.BigInteger.Parse(result[0].ToString());
+            s = System.Numerics.BigInteger.Parse(result[1].ToString());
+            if (lenR == 32 && lenS == 32)
+            {
+                i = calcPubKeyRecoveryParam(curveParams, e, new Signature(r, s), privateKey.ToPublic().ECPoint_D);
+                i += 4;
+                i += 27;
+                break;
+            }
+            if (nonce % 10 == 0)
+            {
+                Console.WriteLine("WARN: " + nonce + " attempts to find canonical signature");
+            }
         }
         Signature signature = new Signature(r, s, i, []);
         signature = new Signature(r, s, i, signature.ToBuffer());
