@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Math.EC;
@@ -84,7 +85,7 @@ namespace Org.BouncyCastle.Crypto.Signers
         {
             return GenerateSignatureEOS(_message, 0);
         }
-        public virtual BigInteger[] GenerateSignatureEOS(byte[] message, int nonce)
+        public virtual BigInteger[] GenerateSignatureEOS(byte[] _message, int nonce)
         {
             var message = _message;
             if (nonce > 0)
