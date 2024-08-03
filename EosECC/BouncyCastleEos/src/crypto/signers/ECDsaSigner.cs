@@ -81,21 +81,23 @@ namespace Org.BouncyCastle.Crypto.Signers
          *
          * @param message the message that will be verified later.
          */
-        public virtual BigInteger[] GenerateSignature(byte[] _message) 
+        public virtual BigInteger[] GenerateSignature(byte[] _message)
         {
             return GenerateSignatureEOS(_message, 0);
         }
         public virtual BigInteger[] GenerateSignatureEOS(byte[] _message, int nonce)
         {
+            ECDomainParameters ec = key.Parameters;
+            BigInteger n = ec.N;
+            BigInteger e = CalculateE(n, _message);
             var message = _message;
             if (nonce > 0)
             {
                 byte[] buffer = [.. message, .. new byte[nonce]];
                 message = System.Security.Cryptography.SHA256.Create().ComputeHash(buffer);
             }
-            ECDomainParameters ec = key.Parameters;
-            BigInteger n = ec.N;
-            BigInteger e = CalculateE(n, message);
+            
+
             BigInteger d = ((ECPrivateKeyParameters)key).D;
 
             if (kCalculator.IsDeterministic)
