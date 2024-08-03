@@ -8,8 +8,8 @@
     <RepositoryUrl>https://github.com/cheburashkalev/EOS-ECC-csharp/</RepositoryUrl>
     <Authors>Andrei Levchenko</Authors>
     <Company>Swiss tech capital</Company>
-    <FileVersion>1.4.$([System.DateTime]::UtcNow.Date.Subtract($([System.DateTime]::Parse("2000-01-01"))).TotalDays).$([System.Math]::Floor($([MSBuild]::Divide($([System.DateTime]::UtcNow.TimeOfDay.TotalSeconds), 1.32))))</FileVersion>
-    <Version>1.4.$([System.DateTime]::UtcNow.Date.Subtract($([System.DateTime]::Parse("2000-01-01"))).TotalDays)</Version>
+    <FileVersion>2.0.$([System.DateTime]::UtcNow.Date.Subtract($([System.DateTime]::Parse("2000-01-01"))).TotalDays).$([System.Math]::Floor($([MSBuild]::Divide($([System.DateTime]::UtcNow.TimeOfDay.TotalSeconds), 1.32))))</FileVersion>
+    <Version>2.0.$([System.DateTime]::UtcNow.Date.Subtract($([System.DateTime]::Parse("2000-01-01"))).TotalDays)</Version>
 	  <!-- Вот это самое главное -->
 	  <PublishSingleFile>true</PublishSingleFile>
 	  <!-- Это чтобы тащить за собой рантайм До .NET 6 будут рядом лежать нативные библиотеки jit-а и сборщика мусора-->
