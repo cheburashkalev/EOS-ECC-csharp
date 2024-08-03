@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Math.EC;
@@ -91,7 +91,7 @@ namespace Org.BouncyCastle.Crypto.Signers
             if (nonce > 0)
             {
                 byte[] buffer = [.. message, .. new byte[nonce]];
-                message = SHA256.Create().ComputeHash(buffer);
+                message = System.Security.Cryptography.SHA256.Create().ComputeHash(buffer);
             }
             ECDomainParameters ec = key.Parameters;
             BigInteger n = ec.N;
