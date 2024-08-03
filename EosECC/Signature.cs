@@ -168,7 +168,7 @@ public class Signature
         System.Numerics.BigInteger s;
         while (true)
         {
-            BigInteger[] result = eCDsaSigner.GenerateSignature(dataSha256,nonce);
+            BigInteger[] result = eCDsaSigner.GenerateSignatureEOS(dataSha256,nonce);
             nonce++;
             var _r = result[0].ToByteArray();
             var _s = result[1].ToByteArray();

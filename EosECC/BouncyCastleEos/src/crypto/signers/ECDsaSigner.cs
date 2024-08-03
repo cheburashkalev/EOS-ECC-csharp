@@ -80,7 +80,11 @@ namespace Org.BouncyCastle.Crypto.Signers
          *
          * @param message the message that will be verified later.
          */
-        public virtual BigInteger[] GenerateSignature(byte[] message, int nonce)
+        public virtual BigInteger[] GenerateSignature(byte[] _message) 
+        {
+            return GenerateSignatureEOS(_message, 0);
+        }
+        public virtual BigInteger[] GenerateSignatureEOS(byte[] message, int nonce)
         {
             var message = _message;
             if (nonce > 0)
