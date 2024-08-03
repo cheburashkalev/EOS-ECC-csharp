@@ -1,6 +1,3 @@
-using System;
-
-using Org.BouncyCastle.Crypto.Digests;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Math.EC;
@@ -122,7 +119,13 @@ namespace Org.BouncyCastle.Crypto.Signers
             }
             while (s.SignValue == 0);
 
-            return new BigInteger[]{ r, s };
+            var N_OVER_TWO = n.ShiftRight(1);
+            if (s.CompareTo(N_OVER_TWO) > 0)
+            {
+                s = n.Subtract(s);
+            }
+
+            return new BigInteger[] { r, s };
         }
 
         // 5.4 pg 29
@@ -149,7 +152,7 @@ namespace Org.BouncyCastle.Crypto.Signers
             BigInteger u2 = r.Multiply(c).Mod(n);
 
             ECPoint G = key.Parameters.G;
-            ECPoint Q = ((ECPublicKeyParameters) key).Q;
+            ECPoint Q = ((ECPublicKeyParameters)key).Q;
 
             ECPoint point = ECAlgorithms.SumOfTwoMultiplies(G, u1, Q, u2);
 

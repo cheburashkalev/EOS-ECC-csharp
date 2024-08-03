@@ -169,7 +169,7 @@ public class Signature
         var lenR = der[3];
         var lenS = der[5 + lenR];
         int i = 0;
-        var e = new BigInteger(dataSha256);
+        var e = new BigInteger(1,dataSha256);
         //System.Security.Cryptography.ECCurve.CreateFromFriendlyName("secp256k1")
         System.Numerics.BigInteger r = System.Numerics.BigInteger.Parse(result[0].ToString());
         System.Numerics.BigInteger s = System.Numerics.BigInteger.Parse(result[1].ToString());
@@ -233,7 +233,7 @@ public class Signature
         var y = beta;
         if (System.Numerics.BigInteger.Parse(beta.ToString()).IsEven ^ !(isYOdd >= 1))
         {
-            y = curve.G.XCoord.ToBigInteger().Subtract(y);
+            y = curve.Curve.Field.Characteristic.Subtract(y);
         }
         return (x, y);
     }
