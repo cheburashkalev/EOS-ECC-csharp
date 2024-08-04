@@ -1,9 +1,11 @@
 
+using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Math.EC;
 using Org.BouncyCastle.Math.EC.Multiplier;
 using Org.BouncyCastle.Security;
+using static Org.BouncyCastle.Crypto.Tls.DtlsReliableHandshake;
 
 namespace Org.BouncyCastle.Crypto.Signers
 {
@@ -85,17 +87,115 @@ namespace Org.BouncyCastle.Crypto.Signers
         {
             return GenerateSignatureEOS(_message, 0);
         }
-        public virtual BigInteger[] GenerateSignatureEOS(byte[] _message, int nonce)
+        private BigInteger deterministicGenerateK(byte[] _hash,Func<BigInteger, bool> checkSig,int nonce) 
+        {
+            var hash = _hash;
+            if (nonce > 0)
+            {
+                byte[] buffer = [.. hash, .. new byte[nonce]];
+                hash = System.Security.Cryptography.SHA256.Create().ComputeHash(buffer);
+            }
+            if (hash.Length != 32)
+                throw new Exception("Hash must be 256 bit");
+            var x = ((ECPrivateKeyParameters)key).D.ToByteArray();
+            var hMac = ((HMacDsaKCalculator)kCalculator).hMac;
+            var k = new byte[hMac.GetMacSize()];
+            var v = new byte[hMac.GetMacSize()];
+            byte[] fill(byte[] bytes,byte input) 
+            {
+                for (int i = 0; i < bytes.Length; i++) 
+                {
+                    bytes[i] = input;
+                }
+                return bytes;
+            }
+            // Step B
+            v = fill(v, 1);
+
+            // Step C
+            k = fill(k, 0);
+
+            ECDomainParameters ec = key.Parameters;
+            BigInteger n = ec.N;
+            BigInteger d = ((ECPrivateKeyParameters)key).D;
+            kCalculator.Init(n, d, hash);
+            // Step D
+            ////hMac.Init(new KeyParameter(k));
+            ////
+            ////hMac.BlockUpdate(v, 0, v.Length);
+            ////hMac.Update((byte)0x00);
+            ////hMac.BlockUpdate(x, 0, x.Length);
+            ////hMac.BlockUpdate(hash, 0, hash.Length);
+            ////
+            ////hMac.DoFinal(k, 0);
+
+            //byte[] StepD = [.. v, .. new byte[1] { 0 }, .. x, .. hash];
+            //k = System.Security.Cryptography.HMACSHA256.HashData(StepD, k);
+
+            // Step E
+            ////hMac.Init(new KeyParameter(k));
+            ////
+            ////hMac.BlockUpdate(v, 0, v.Length);
+            ////
+            ////hMac.DoFinal(v, 0);
+            //v = System.Security.Cryptography.HMACSHA256.HashData(v, k);
+
+            // Step F
+            //byte[] StepF = [.. v, .. new byte[1] { 1 }, .. x, .. hash];
+            //k = System.Security.Cryptography.HMACSHA256.HashData(StepF, k);
+
+            // Step G
+            //v = System.Security.Cryptography.HMACSHA256.HashData(v, k);
+
+            // Step H1/H2a, ignored as tlen === qlen (256 bit)
+            // Step H2b
+            //v = System.Security.Cryptography.HMACSHA256.HashData(v, k);
+            v = ((HMacDsaKCalculator)kCalculator).V;
+            k = ((HMacDsaKCalculator)kCalculator).K;
+            var T = new BigInteger(1,v);
+            
+
+            // Step H3, repeat until T is within the interval [1, n - 1]
+            while (T.SignValue <= 0 || (T.CompareTo(((ECPrivateKeyParameters)key).Parameters.n) >= 0) || !checkSig.Invoke(T)) 
+            {
+                hMac.Init(new KeyParameter(k));
+
+                hMac.BlockUpdate(v, 0, v.Length);
+                hMac.Update((byte)0x00);
+
+                hMac.DoFinal(k, 0);
+
+                hMac.Init(new KeyParameter(k));
+
+                hMac.BlockUpdate(v, 0, v.Length);
+
+                hMac.DoFinal(v, 0);
+                // Step H1/H2a, again, ignored as tlen === qlen (256 bit)
+                // Step H2b again
+                hMac.Init(new KeyParameter(k));
+
+                hMac.BlockUpdate(v, 0, v.Length);
+
+                hMac.DoFinal(v, 0);
+
+                //k = System.Security.Cryptography.HMACSHA256.HashData(v.Concat(new byte[1] { 0 }).ToArray(), k);
+                //v = System.Security.Cryptography.HMACSHA256.HashData(v, k);
+                //
+                //// Step H1/H2a, again, ignored as tlen === qlen (256 bit)
+                //// Step H2b again
+                //v = System.Security.Cryptography.HMACSHA256.HashData(v, k);
+
+
+                T = new BigInteger(1,v);
+            }
+            return T;
+        }
+        public virtual BigInteger[] GenerateSignatureEOS(byte[] message, int nonce)
         {
             ECDomainParameters ec = key.Parameters;
             BigInteger n = ec.N;
-            BigInteger e = CalculateE(n, _message);
-            var message = _message;
-            if (nonce > 0)
-            {
-                byte[] buffer = [.. message, .. new byte[nonce]];
-                message = System.Security.Cryptography.SHA256.Create().ComputeHash(buffer);
-            }
+            BigInteger e = CalculateE(n, message);
+
             
 
             BigInteger d = ((ECPrivateKeyParameters)key).D;
@@ -108,29 +208,47 @@ namespace Org.BouncyCastle.Crypto.Signers
             {
                 kCalculator.Init(n, random);
             }
-
-            BigInteger r, s;
-
-            ECMultiplier basePointMultiplier = CreateBasePointMultiplier();
-
-            // 5.3.2
-            do // Generate s
+            
+            BigInteger r = new BigInteger("0"), s = new BigInteger("0");
+            var k = deterministicGenerateK(message, (k) =>
             {
-                BigInteger k;
-                do // Generate r
-                {
-                    k = kCalculator.NextK();
+                // find canonically valid signature
+                var Q = ec.G.MultiplyEOS(k);
 
-                    ECPoint p = basePointMultiplier.Multiply(ec.G, k).Normalize();
+                if (Q.IsInfinityEOS) return false;
 
-                    // 5.3.3
-                    r = p.AffineXCoord.ToBigInteger().Mod(n);
-                }
-                while (r.SignValue == 0);
+                var p = ((ECPrivateKeyParameters)key).Parameters.Curve.Field.Characteristic;
+                var zInv = Q.GetZCoord(0).ToBigInteger().ModInverse(p);
+                var QaffineX = Q.XCoord.ToBigInteger().Multiply(zInv).Mod(p);
+                r = QaffineX.Mod(n);
+                if(r.SignValue == 0) return false;
 
                 s = k.ModInverse(n).Multiply(e.Add(d.Multiply(r))).Mod(n);
-            }
-            while (s.SignValue == 0);
+                if(s.SignValue == 0) return false;
+
+                return true;
+
+            }, nonce);
+            //ECMultiplier basePointMultiplier = CreateBasePointMultiplier();
+            //
+            //// 5.3.2
+            //do // Generate s
+            //{
+            //    BigInteger k;
+            //    do // Generate r
+            //    {
+            //        k = kCalculator.NextK();
+            //
+            //        ECPoint p = basePointMultiplier.Multiply(ec.G, k).Normalize();
+            //
+            //        // 5.3.3
+            //        r = p.AffineXCoord.ToBigInteger().Mod(n);
+            //    }
+            //    while (r.SignValue == 0);
+            //
+            //    s = k.ModInverse(n).Multiply(e.Add(d.Multiply(r))).Mod(n);
+            //}
+            //while (s.SignValue == 0);
 
             var N_OVER_TWO = n.ShiftRight(1);
             if (s.CompareTo(N_OVER_TWO) > 0)

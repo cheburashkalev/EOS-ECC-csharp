@@ -161,7 +161,7 @@ public class Signature
         X9ECParameters curveParams = CustomNamedCurves.GetByName("secp256k1");
         
         ECDomainParameters domainParams = new ECDomainParameters(curveParams.Curve, curveParams.G, curveParams.N, curveParams.H);
-        eCDsaSigner.Init(true, new ECPrivateKeyParameters(new Org.BouncyCastle.Math.BigInteger(privateKey.D), domainParams));
+        eCDsaSigner.Init(true, new ECPrivateKeyParameters(new Org.BouncyCastle.Math.BigInteger(1,privateKey.D), domainParams));
         int nonce = 0;
         int i = 0;
         System.Numerics.BigInteger r;

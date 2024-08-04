@@ -1,5 +1,5 @@
 ﻿using System;
-
+using System.Security.Cryptography;
 using Org.BouncyCastle.Crypto.Macs;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Math;
@@ -14,9 +14,9 @@ namespace Org.BouncyCastle.Crypto.Signers
     public class HMacDsaKCalculator
         :   IDsaKCalculator
     {
-        private readonly HMac hMac;
-        private readonly byte[] K;
-        private readonly byte[] V;
+        public readonly HMac hMac;
+        public readonly byte[] K;
+        public readonly byte[] V;
 
         private BigInteger n;
 
@@ -88,6 +88,12 @@ namespace Org.BouncyCastle.Crypto.Signers
             hMac.BlockUpdate(m, 0, m.Length);
 
             hMac.DoFinal(K, 0);
+
+            hMac.Init(new KeyParameter(K));
+
+            hMac.BlockUpdate(V, 0, V.Length);
+
+            hMac.DoFinal(V, 0);
 
             hMac.Init(new KeyParameter(K));
 
