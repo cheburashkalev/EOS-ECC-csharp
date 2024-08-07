@@ -58,7 +58,7 @@ public class PrivateKey
     {
         X9ECParameters curveParams = CustomNamedCurves.GetByName("secp256k1");
         
-        return new PublicKey { Q = curveParams.G.Multiply(new BigInteger(D)).GetEncoded(), ECPoint_D = curveParams.G.MultiplyEOS(new BigInteger(D)) };
+        return new PublicKey { Q = curveParams.G.Multiply(new BigInteger(1,D)).GetEncoded(), ECPoint_D = curveParams.G.MultiplyEOS(new BigInteger(1,D)) };
     }
     private static PrivateKey FromBuffer(byte[] buf)
     {
