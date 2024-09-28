@@ -841,6 +841,7 @@ namespace Org.BouncyCastle.Crypto.EC
 
         public static X9ECParameters GetByName(string name)
         {
+
             X9ECParametersHolder holder = (X9ECParametersHolder)nameToCurve[Platform.ToUpperInvariant(name)];
             return holder == null ? null : holder.Parameters;
         }

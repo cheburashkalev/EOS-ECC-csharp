@@ -347,9 +347,14 @@ namespace Org.BouncyCastle.Math.EC.Custom.Sec
                 z2 = Z2.ToBigInteger();
             else
                 z2 = BigInteger.One;
-            var u = y2.Multiply(z1).Subtract(y1.Multiply(z2)).Mod(p);
-
-            var v = x2.Multiply(z1).Subtract(x1.Multiply(z2)).Mod(p);
+            BigInteger? u = null;
+            BigInteger? v = null;
+            List<Action> actions3 = new List<Action>()
+            {
+                ()=> u = y2.Multiply(z1).Subtract(y1.Multiply(z2)).Mod(p),
+                ()=> v = x2.Multiply(z1).Subtract(x1.Multiply(z2)).Mod(p)
+            };
+            Parallel.Invoke(actions: actions3.ToArray());
 
             if (v.SignValue == 0)
             {
@@ -361,16 +366,35 @@ namespace Org.BouncyCastle.Math.EC.Custom.Sec
             }
 
             var v2 = v.Square();
-            var v3 = v2.Multiply(v);
-            var x1v2 = x1.Multiply(v2);
-            var zu2 = u.Square().Multiply(z1);
+            BigInteger? v3 = null;
+            BigInteger? x1v2 = null;
+            BigInteger? zu2 = null;
+            List<Action> actions = new List<Action>()
+            {
+                ()=> v3 = v2.Multiply(v),
+                ()=> x1v2 = x1.Multiply(v2),
+                ()=> zu2 = u.Square().Multiply(z1),
+            };
+            Parallel.Invoke(actions: actions.ToArray());
 
+
+
+            BigInteger? x3 = null;
+            BigInteger? y3 = null;
+            BigInteger? z3 = null;
+            List<Action> actions2 = new List<Action>()
+            {
+                ()=> x3 = zu2.Subtract(x1v2.ShiftLeft(1)).Multiply(z2).Subtract(v3).Multiply(v).Mod(p),
+                ()=> y3 = x1v2.Multiply(BigInteger.Three).Multiply(u).Subtract(y1.Multiply(v3)).Subtract(zu2.Multiply(u)).Multiply(z2).Add(u.Multiply(v3)).Mod(p),
+                ()=> z3 = v3.Multiply(z1).Multiply(z2).Mod(p),
+            };
+            Parallel.Invoke(actions: actions2.ToArray());
             // x3 = v * (z2 * (z1 * u^2 - 2 * x1 * v^2) - v^3)
-            var x3 = zu2.Subtract(x1v2.ShiftLeft(1)).Multiply(z2).Subtract(v3).Multiply(v).Mod(p);
+            //var x3 = zu2.Subtract(x1v2.ShiftLeft(1)).Multiply(z2).Subtract(v3).Multiply(v).Mod(p);
             // y3 = z2 * (3 * x1 * u * v^2 - y1 * v^3 - z1 * u^3) + u * v^3
-            var y3 = x1v2.Multiply(BigInteger.Three).Multiply(u).Subtract(y1.Multiply(v3)).Subtract(zu2.Multiply(u)).Multiply(z2).Add(u.Multiply(v3)).Mod(p);
+            //var y3 = x1v2.Multiply(BigInteger.Three).Multiply(u).Subtract(y1.Multiply(v3)).Subtract(zu2.Multiply(u)).Multiply(z2).Add(u.Multiply(v3)).Mod(p);
             // z3 = v^3 * z1 * z2
-            var z3 = v3.Multiply(z1).Multiply(z2).Mod(p);
+            //var z3 = v3.Multiply(z1).Multiply(z2).Mod(p);
             return new SecP256K1Point(this.Curve, new SecP256K1FieldElement(x3), new SecP256K1FieldElement(y3), new ECFieldElement[] { new SecP256K1FieldElement(z3) }, true);
         }
         public override ECPoint TwiceEOS()
@@ -391,27 +415,48 @@ namespace Org.BouncyCastle.Math.EC.Custom.Sec
             {
                 z1 = Z1.ToBigInteger();
             }
-            uint c;
             var p = curve.Field.Characteristic;
-            var y1z1 = Y1.Multiply(z1).Mod(p);
-            var y1sqz1 = y1z1.Multiply(Y1).Mod(p);
             var a = curve.A.ToBigInteger();
+            BigInteger? y1z1 = null;
+            BigInteger? y1sqz1 = null;
+
 
             // w = 3 * x1^2 + a * z1^2
-            var w = X1.Square().Multiply(BigInteger.Three);
+            BigInteger? w = null;
 
-            if (a.SignValue != 0)
+            var tasks2 = new List<Action>()
             {
-                w = w.Add(z1.Square().Multiply(a));
-            }
+                () => 
+                {
+                    y1z1 = Y1.Multiply(z1).Mod(p);
+                    y1sqz1 = y1z1.Multiply(Y1).Mod(p);
+                },
+                () => 
+                {
+                    w = X1.Square().Multiply(BigInteger.Three);
 
-            w = w.Mod(p);
+                    if (a.SignValue != 0)
+                    {
+                        w = w.Add(z1.Square().Multiply(a));
+                    }
 
-            var x3 = w.Square().Subtract(X1.ShiftLeft(3).Multiply(y1sqz1)).ShiftLeft(1).Multiply(y1z1).Mod(p);
-            //var y3 = w.multiply(THREE).multiply(x1).subtract(y1sqz1.shiftLeft(1)).shiftLeft(2).multiply(y1sqz1).subtract(w.pow(3)).mod(this.curve.p)
-            var y3 = w.Multiply(BigInteger.Three).Multiply(X1).Subtract(y1sqz1.ShiftLeft(1)).ShiftLeft(2).Multiply(y1sqz1).Subtract(w.Pow(3)).Mod(p);
+                    w = w.Mod(p);
+                }
+            };
+            Parallel.Invoke(actions: tasks2.ToArray());
 
-            var z3 = y1z1.Pow(3).ShiftLeft(3).Mod(p);
+            BigInteger? x3 = null;// = w.Square().Subtract(X1.ShiftLeft(3).Multiply(y1sqz1)).ShiftLeft(1).Multiply(y1z1).Mod(p);
+
+            BigInteger? y3 = null;// = w.Multiply(BigInteger.Three).Multiply(X1).Subtract(y1sqz1.ShiftLeft(1)).ShiftLeft(2).Multiply(y1sqz1).Subtract(w.Pow(3)).Mod(p);
+
+            BigInteger? z3 = null;// = y1z1.Pow(3).ShiftLeft(3).Mod(p);
+            var tasks = new List<Action>()
+            {
+                () => x3 = w.Square().Subtract(X1.ShiftLeft(3).Multiply(y1sqz1)).ShiftLeft(1).Multiply(y1z1).Mod(p),
+                () => y3 = w.Multiply(BigInteger.Three).Multiply(X1).Subtract(y1sqz1.ShiftLeft(1)).ShiftLeft(2).Multiply(y1sqz1).Subtract(w.Pow(3)).Mod(p),
+                () => z3 = y1z1.Pow(3).ShiftLeft(3).Mod(p)
+            };
+            Parallel.Invoke(actions: tasks.ToArray());
             //uint[] Y1Squared = Nat256.Create();
             //SecP256K1Field.Square(Y1.x, Y1Squared);
             //
